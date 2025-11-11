@@ -9,8 +9,10 @@ class Mahasiswa extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'nim',
-        'nama',
-    ];
+    protected $fillable = ['nim', 'nama'];
+
+    public function nilaiModul()
+    {
+        return $this->hasMany(NilaiModul::class);
+    }
 }

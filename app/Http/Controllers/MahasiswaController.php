@@ -52,4 +52,27 @@ class MahasiswaController extends Controller
     return redirect()->route('dashboard')->with('success', 'Data mahasiswa berhasil diperbarui.');
 }
 
+public function updateNilai(Request $request)
+{
+    $validated = $request->validate([
+        'mahasiswa_id' => 'required|integer',
+        'modul' => 'required|integer|min:1|max:10',
+        'kolom' => 'required|string|in:kehadiran,laporan,demo',
+        'nilai' => 'nullable|integer|min:0|max:100',
+    ]);
+
+    $nilai = \App\Models\NilaiModul::firstOrCreate(
+        [
+            'mahasiswa_id' => $validated['mahasiswa_id'],
+            'modul' => $validated['modul'],
+        ]
+    );
+
+    $nilai->{$validated['kolom']} = $validated['nilai'];
+    $nilai->save();
+
+    return response()->json(['success' => true]);
+}
+
+
 }

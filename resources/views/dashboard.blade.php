@@ -4,143 +4,243 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Absensi Mahasiswa</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+<body class="bg-light">
 
-<body class="p-4 bg-light">
-    <div class="container-fluid">
-
-        <h1 class="mb-4">Dashboard Absensi Mahasiswa</h1>
-
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        <!-- Tombol Tambah Mahasiswa -->
-        <button class="btn btn-primary mb-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTambah">
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>📘 Dashboard Absensi Mahasiswa</h3>
+        <button class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTambah">
             + Tambah Mahasiswa
         </button>
+    </div>
 
-        @include('tambah_mahasiswa')
-
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle text-center">
-                <thead class="table-secondary">
-                    <tr>
-                        <th rowspan="3">No</th>
-                        <th rowspan="3">NIM</th>
-                        <th rowspan="3">Nama</th>
-                        <th colspan="3" rowspan="2">Kehadiran</th>
-                        <th colspan="30">Modul</th>
-                        <th rowspan="3">Final Project</th>
-                        <th rowspan="3">Nilai Akhir</th>
-                        <th rowspan="3">Abjad</th>
-                        <th rowspan="3">Aksi</th>
-                    </tr>
-                    <tr>
-                        @for($i = 1; $i <= 10; $i++)
-                            <th colspan="3">Modul {{ $i }}</th>
-                        @endfor
-                    </tr>
-                    <tr>
-                        <th>Hadir</th>
-                        <th>Tidak Hadir</th>
-                        <th>Izin</th>
-
-                        @for($i = 1; $i <= 10; $i++)
-                            <th>Kehadiran</th>
-                            <th>Laporan Praktikum</th>
-                            <th>Demo Implementasi</th>
-                        @endfor
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @forelse($mahasiswa as $index => $m)
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center">
+            <thead class="table-secondary">
+                <tr>
+                    <th rowspan="2">No</th>
+                    <th rowspan="2">NIM</th>
+                    <th rowspan="2">Nama</th>
+                    @for($i = 1; $i <= 10; $i++)
+                        <th colspan="3">Modul {{ $i }}</th>
+                    @endfor
+                    <th rowspan="2">Final Project</th>
+                    <th rowspan="2">Nilai Akhir</th>
+                    <th rowspan="2">Abjad</th>
+                    <th rowspan="2">Aksi</th>
+                </tr>
+                <tr>
+                    @for($i = 1; $i <= 10; $i++)
+                        <th>Kehadiran</th>
+                        <th>Laporan</th>
+                        <th>Demo</th>
+                    @endfor
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($mahasiswa as $index => $m)
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td>{{ $m->nim }}</td>
                         <td>{{ $m->nama }}</td>
 
-                        <!-- Kehadiran -->
-                        <td><input type="checkbox" name="hadir_{{ $index }}" class="kehadiran" data-row="{{ $index }}"></td>
-                        <td><input type="checkbox" name="tidak_hadir_{{ $index }}" class="kehadiran" data-row="{{ $index }}"></td>
-                        <td><input type="checkbox" name="izin_{{ $index }}" class="kehadiran" data-row="{{ $index }}"></td>
-
+                        {{-- Isi modul kosong manual --}}
                         @for($i = 1; $i <= 10; $i++)
-                            <td></td><td></td><td></td>
+                            <td contenteditable="true"
+                                class="editable"
+                                data-mahasiswa="{{ $m->id }}"
+                                data-modul="{{ $i }}"
+                                data-kolom="kehadiran"></td>
+                            <td contenteditable="true"
+                                class="editable"
+                                data-mahasiswa="{{ $m->id }}"
+                                data-modul="{{ $i }}"
+                                data-kolom="laporan"></td>
+                            <td contenteditable="true"
+                                class="editable"
+                                data-mahasiswa="{{ $m->id }}"
+                                data-modul="{{ $i }}"
+                                data-kolom="demo"></td>
                         @endfor
 
+                        <td contenteditable="true" class="editable-final" data-id="{{ $m->id }}"></td>
                         <td></td>
                         <td></td>
-                        <td></td>
-
-                        <!-- Tombol Edit -->
                         <td>
-                            <button class="btn btn-sm btn-warning"
+                            <button class="btn btn-sm btn-warning btn-edit"
+                                data-id="{{ $m->id }}"
+                                data-nim="{{ $m->nim }}"
+                                data-nama="{{ $m->nama }}"
                                 data-bs-toggle="modal"
-                                data-bs-target="#editModal{{ $m->id }}">
-                                Edit
+                                data-bs-target="#modalEdit">
+                                📝 Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger btn-hapus" data-id="{{ $m->id }}">
+                                🗑️ Hapus
                             </button>
                         </td>
                     </tr>
-
-                    <!-- Modal Edit Mahasiswa -->
-                    <div class="modal fade" id="editModal{{ $m->id }}" tabindex="-1" aria-labelledby="editModalLabel{{ $m->id }}" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <form action="{{ route('mahasiswa.update', $m->id) }}" method="POST">
-                                    @csrf
-                                    @method('PUT')
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="editModalLabel{{ $m->id }}">Edit Mahasiswa</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label for="nim{{ $m->id }}" class="form-label">NIM</label>
-                                            <input type="text" class="form-control" id="nim{{ $m->id }}" name="nim" value="{{ $m->nim }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="nama{{ $m->id }}" class="form-label">Nama</label>
-                                            <input type="text" class="form-control" id="nama{{ $m->id }}" name="nama" value="{{ $m->nama }}" required>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                        <button type="submit" class="btn btn-primary">Simpan</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    @empty
-                    <tr>
-                        <td colspan="40" class="text-muted">Belum ada data mahasiswa.</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                @endforeach
+            </tbody>
+        </table>
     </div>
+</div>
 
-    <!-- Script Bootstrap & Checkbox Handler -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.querySelectorAll('.kehadiran').forEach(cb => {
-            cb.addEventListener('change', e => {
-                const row = e.target.dataset.row;
-                const group = document.querySelectorAll(`.kehadiran[data-row="${row}"]`);
-                if (e.target.checked) {
-                    group.forEach(other => {
-                        if (other !== e.target) other.checked = false;
-                    });
-                }
-            });
+{{-- =====================================
+     OFFCANVAS TAMBAH MAHASISWA
+===================================== --}}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasTambah">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Tambah Mahasiswa</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <form id="formTambahMahasiswa">
+        @csrf
+        <div class="mb-3">
+            <label class="form-label">NIM</label>
+            <input type="text" class="form-control" id="nim" name="nim" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nama</label>
+            <input type="text" class="form-control" id="nama" name="nama" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Simpan</button>
+    </form>
+  </div>
+</div>
+
+{{-- =====================================
+     MODAL EDIT MAHASISWA
+===================================== --}}
+<div class="modal fade" id="modalEdit" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEditMahasiswa">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Mahasiswa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          @csrf
+          <input type="hidden" id="edit_id">
+          <div class="mb-3">
+            <label class="form-label">NIM</label>
+            <input type="text" id="edit_nim" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nama</label>
+            <input type="text" id="edit_nama" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// === Tambah Mahasiswa ===
+document.getElementById('formTambahMahasiswa').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    fetch("{{ route('mahasiswa.store') }}", {
+        method: "POST",
+        headers: { "X-CSRF-TOKEN": "{{ csrf_token() }}" },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Gagal menambah mahasiswa');
+    });
+});
+
+// === Buka Modal Edit ===
+document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('edit_id').value = this.dataset.id;
+        document.getElementById('edit_nim').value = this.dataset.nim;
+        document.getElementById('edit_nama').value = this.dataset.nama;
+    });
+});
+
+// === Simpan Perubahan Edit ===
+document.getElementById('formEditMahasiswa').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit_id').value;
+    const nim = document.getElementById('edit_nim').value;
+    const nama = document.getElementById('edit_nama').value;
+
+    fetch(`/mahasiswa/update/${id}`, {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ nim, nama })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('Gagal mengedit mahasiswa');
+    });
+});
+
+// === Hapus Mahasiswa ===
+document.querySelectorAll('.btn-hapus').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (!confirm("Yakin ingin menghapus mahasiswa ini?")) return;
+
+        const id = this.dataset.id;
+
+        fetch(`/mahasiswa/delete/${id}`, {
+            method: "DELETE",
+            headers: { "X-CSRF-TOKEN": "{{ csrf_token() }}" }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert('Gagal menghapus mahasiswa');
         });
-    </script>
+    });
+});
+
+// === Inline Edit Nilai Modul ===
+document.querySelectorAll('.editable').forEach(cell => {
+    cell.addEventListener('blur', function() {
+        const mahasiswa_id = this.dataset.mahasiswa;
+        const modul = this.dataset.modul;
+        const kolom = this.dataset.kolom;
+        const nilai = this.innerText.trim();
+
+        fetch("{{ route('nilai.update') }}", {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ mahasiswa_id, modul, kolom, nilai })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                this.style.backgroundColor = "#d4edda";
+                setTimeout(() => this.style.backgroundColor = "", 600);
+            } else {
+                this.style.backgroundColor = "#f8d7da";
+            }
+        });
+    });
+});
+</script>
+
 </body>
 </html>

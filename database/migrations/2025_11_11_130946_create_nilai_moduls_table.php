@@ -10,12 +10,18 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
-        Schema::create('nilai_moduls', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
-    }
+{
+    Schema::create('nilai_moduls', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('mahasiswa_id')->constrained()->onDelete('cascade');
+        $table->integer('modul');
+        $table->integer('kehadiran')->nullable();
+        $table->integer('laporan')->nullable();
+        $table->integer('demo')->nullable();
+        $table->timestamps();
+    });
+}
+
 
     /**
      * Reverse the migrations.
