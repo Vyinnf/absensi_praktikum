@@ -9,7 +9,7 @@ class NilaiModul extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['mahasiswa_id', 'modul', 'kehadiran', 'laporan', 'demo'];
+    protected $fillable = ['mahasiswa_id', 'modul', 'kehadiran', 'laporan', 'demo', 'final_project'];
 
     public function mahasiswa()
     {

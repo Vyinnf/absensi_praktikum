@@ -62,6 +62,35 @@
             {{ $nilai->demo ?? '' }}
         </td>
     @endfor
+
+    {{-- Final Project (Input Manual) --}}
+    @php
+        $finalProject = $m->nilai_moduls->first()?->final_project ?? '';
+    @endphp
+    <td contenteditable="true" data-mahasiswa="{{ $m->id }}" data-kolom="final_project">
+        {{ $finalProject }}
+    </td>
+
+    {{-- Nilai Akhir (Read-only, Calculated) --}}
+    <td class="fw-bold text-center">
+        {{ $m->getNilaiAkhir() }}
+    </td>
+
+    {{-- Abjad (Read-only, Calculated) --}}
+    <td class="fw-bold text-center">
+        {{ $m->getGrade() }}
+    </td>
+
+    {{-- Aksi (Edit & Delete) --}}
+    <td class="text-center">
+        <button class="btn btn-sm btn-warning btn-edit" data-id="{{ $m->id }}" data-nim="{{ $m->nim }}" data-nama="{{ $m->nama }}" data-bs-toggle="modal" data-bs-target="#modalEdit">
+            ✏️ Edit
+        </button>
+        <button class="btn btn-sm btn-danger btn-hapus" data-id="{{ $m->id }}">
+            🗑️ Hapus
+        </button>
+    </td>
+</tr>
 @endforeach
 
             </tbody>
@@ -200,7 +229,7 @@ document.getElementById('formEditMahasiswa').addEventListener('submit', function
     const nama = document.getElementById('edit_nama').value;
 
     fetch(`/mahasiswa/update/${id}`, {
-        method: "POST",
+        method: "PUT",
         headers: {
             "X-CSRF-TOKEN": "{{ csrf_token() }}",
             "Content-Type": "application/json",
@@ -209,8 +238,17 @@ document.getElementById('formEditMahasiswa').addEventListener('submit', function
     })
     .then(res => res.json())
     .then(data => {
-        if (data.success) location.reload();
-        else alert('Gagal mengedit mahasiswa');
+        if (data.success) {
+            // Tutup modal dan reload
+            bootstrap.Modal.getInstance(document.getElementById('modalEdit')).hide();
+            location.reload();
+        } else {
+            alert('Gagal mengedit mahasiswa: ' + (data.message || ''));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Terjadi kesalahan koneksi');
     });
 });
 
@@ -227,19 +265,33 @@ document.querySelectorAll('.btn-hapus').forEach(btn => {
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) location.reload();
-            else alert('Gagal menghapus mahasiswa');
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Gagal menghapus mahasiswa: ' + (data.message || ''));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Terjadi kesalahan koneksi');
         });
     });
 });
 
-// === Inline Edit Nilai Modul ===
+// === Inline Edit Nilai Modul & Final Project ===
 document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
     cell.addEventListener('blur', function() {
         const mahasiswa_id = this.dataset.mahasiswa;
-        const modul = this.dataset.modul;
+        const modul = this.dataset.modul || null;
         const kolom = this.dataset.kolom;
         const nilai = this.innerText.trim();
+
+        // Validasi nilai hanya angka
+        if (nilai && isNaN(nilai)) {
+            alert('Nilai harus berupa angka');
+            this.style.backgroundColor = "#f8d7da";
+            return;
+        }
 
         fetch("{{ route('nilai.update') }}", {
             method: "POST",
@@ -247,16 +299,25 @@ document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
                 "X-CSRF-TOKEN": "{{ csrf_token() }}",
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ mahasiswa_id, modul, kolom, nilai })
+            body: JSON.stringify({ mahasiswa_id, modul, kolom, nilai: nilai ? parseInt(nilai) : null })
         })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
                 this.style.backgroundColor = "#d4edda";
-                setTimeout(() => this.style.backgroundColor = "", 600);
+                setTimeout(() => {
+                    this.style.backgroundColor = "";
+                    location.reload(); // Reload untuk update nilai akhir & grade
+                }, 600);
             } else {
                 this.style.backgroundColor = "#f8d7da";
+                alert('Gagal menyimpan nilai: ' + (data.message || ''));
             }
+        })
+        .catch(err => {
+            console.error(err);
+            this.style.backgroundColor = "#f8d7da";
+            alert('Terjadi kesalahan koneksi');
         });
     });
 });
