@@ -11,7 +11,7 @@ class MahasiswaController extends Controller
     public function index()
     {
         // Ambil semua data mahasiswa dari database
-        $mahasiswa = Mahasiswa::all();
+        $mahasiswa = Mahasiswa::with('nilai_moduls')->get();
 
         // Kirim ke view dashboard
         return view('dashboard', compact('mahasiswa'));
@@ -37,42 +37,40 @@ class MahasiswaController extends Controller
     }
 
     public function update(Request $request, $id)
-{
-    $request->validate([
-        'nim' => 'required',
-        'nama' => 'required',
-    ]);
+    {
+        $request->validate([
+            'nim' => 'required',
+            'nama' => 'required',
+        ]);
 
-    $mahasiswa = Mahasiswa::findOrFail($id);
-    $mahasiswa->update([
-        'nim' => $request->nim,
-        'nama' => $request->nama,
-    ]);
+        $mahasiswa = Mahasiswa::findOrFail($id);
+        $mahasiswa->update([
+            'nim' => $request->nim,
+            'nama' => $request->nama,
+        ]);
 
-    return redirect()->route('dashboard')->with('success', 'Data mahasiswa berhasil diperbarui.');
-}
+        return redirect()->route('dashboard')->with('success', 'Data mahasiswa berhasil diperbarui.');
+    }
 
-public function updateNilai(Request $request)
-{
-    $validated = $request->validate([
-        'mahasiswa_id' => 'required|integer',
-        'modul' => 'required|integer|min:1|max:10',
-        'kolom' => 'required|string|in:kehadiran,laporan,demo',
-        'nilai' => 'nullable|integer|min:0|max:100',
-    ]);
+    public function updateNilai(Request $request)
+    {
+        $validated = $request->validate([
+            'mahasiswa_id' => 'required|integer',
+            'modul' => 'required|integer|min:1|max:10',
+            'kolom' => 'required|string|in:kehadiran,laporan,demo',
+            'nilai' => 'nullable|integer|min:0|max:100',
+        ]);
 
-    $nilai = \App\Models\NilaiModul::firstOrCreate(
-        [
-            'mahasiswa_id' => $validated['mahasiswa_id'],
-            'modul' => $validated['modul'],
-        ]
-    );
+        $nilai = \App\Models\NilaiModul::firstOrCreate(
+            [
+                'mahasiswa_id' => $validated['mahasiswa_id'],
+                'modul' => $validated['modul'],
+            ]
+        );
 
-    $nilai->{$validated['kolom']} = $validated['nilai'];
-    $nilai->save();
+        $nilai->{$validated['kolom']} = $validated['nilai'];
+        $nilai->save();
 
-    return response()->json(['success' => true]);
-}
-
-
+        return response()->json(['success' => true]);
+    }
 }

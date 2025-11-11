@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MahasiswaController;
+use App\Http\Controllers\NilaiController;
 
 // Route untuk menampilkan dashboard (dengan data mahasiswa)
 Route::get('/', [MahasiswaController::class, 'index'])->name('dashboard');

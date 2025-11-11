@@ -41,49 +41,29 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($mahasiswa as $index => $m)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td>{{ $m->nim }}</td>
-                        <td>{{ $m->nama }}</td>
+@foreach($mahasiswa as $m)
+<tr>
+    <td>{{ $loop->iteration }}</td>
+    <td>{{ $m->nim }}</td>
+    <td>{{ $m->nama }}</td>
 
-                        {{-- Isi modul kosong manual --}}
-                        @for($i = 1; $i <= 10; $i++)
-                            <td contenteditable="true"
-                                class="editable"
-                                data-mahasiswa="{{ $m->id }}"
-                                data-modul="{{ $i }}"
-                                data-kolom="kehadiran"></td>
-                            <td contenteditable="true"
-                                class="editable"
-                                data-mahasiswa="{{ $m->id }}"
-                                data-modul="{{ $i }}"
-                                data-kolom="laporan"></td>
-                            <td contenteditable="true"
-                                class="editable"
-                                data-mahasiswa="{{ $m->id }}"
-                                data-modul="{{ $i }}"
-                                data-kolom="demo"></td>
-                        @endfor
+    {{-- Loop modul --}}
+    @for($i = 1; $i <= 10; $i++)
+        @php
+            $nilai = $m->nilai_moduls->where('modul', $i)->first();
+        @endphp
+        <td contenteditable="true" data-mahasiswa="{{ $m->id }}" data-modul="{{ $i }}" data-kolom="kehadiran">
+            {{ $nilai->kehadiran ?? '' }}
+        </td>
+        <td contenteditable="true" data-mahasiswa="{{ $m->id }}" data-modul="{{ $i }}" data-kolom="laporan">
+            {{ $nilai->laporan ?? '' }}
+        </td>
+        <td contenteditable="true" data-mahasiswa="{{ $m->id }}" data-modul="{{ $i }}" data-kolom="demo">
+            {{ $nilai->demo ?? '' }}
+        </td>
+    @endfor
+@endforeach
 
-                        <td contenteditable="true" class="editable-final" data-id="{{ $m->id }}"></td>
-                        <td></td>
-                        <td></td>
-                        <td>
-                            <button class="btn btn-sm btn-warning btn-edit"
-                                data-id="{{ $m->id }}"
-                                data-nim="{{ $m->nim }}"
-                                data-nama="{{ $m->nama }}"
-                                data-bs-toggle="modal"
-                                data-bs-target="#modalEdit">
-                                📝 Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger btn-hapus" data-id="{{ $m->id }}">
-                                🗑️ Hapus
-                            </button>
-                        </td>
-                    </tr>
-                @endforeach
             </tbody>
         </table>
     </div>
@@ -147,19 +127,59 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // === Tambah Mahasiswa ===
-document.getElementById('formTambahMahasiswa').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
+document.addEventListener('DOMContentLoaded', function() {
+    const formTambah = document.getElementById('formTambahMahasiswa');
+    const submitBtn = formTambah.querySelector('button[type="submit"]');
 
-    fetch("{{ route('mahasiswa.store') }}", {
-        method: "POST",
-        headers: { "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) location.reload();
-        else alert('Gagal menambah mahasiswa');
+    formTambah.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Disable tombol simpan agar tidak double submit
+        submitBtn.disabled = true;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Menyimpan...';
+
+        const formData = new FormData(formTambah);
+
+        try {
+            const response = await fetch("{{ route('mahasiswa.store') }}", {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                },
+                body: formData
+            });
+
+            // Karena controller redirect, maka respons bukan JSON, tapi HTML
+            if (response.redirected) {
+                // Tutup offcanvas dulu
+                const offcanvasEl = document.getElementById('offcanvasTambah');
+                if (offcanvasEl && bootstrap?.Offcanvas) {
+                    bootstrap.Offcanvas.getInstance(offcanvasEl)?.hide();
+                }
+
+                formTambah.reset();
+                window.location.href = response.url; // reload otomatis
+                return;
+            }
+
+            // Jika backend ubah ke JSON response
+            const data = await response.json();
+            if (data.success) {
+                const offcanvasEl = document.getElementById('offcanvasTambah');
+                bootstrap.Offcanvas.getInstance(offcanvasEl)?.hide();
+                formTambah.reset();
+                location.reload();
+            } else {
+                alert('Gagal menyimpan data mahasiswa');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Terjadi kesalahan koneksi: ' + error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
     });
 });
 
@@ -214,7 +234,7 @@ document.querySelectorAll('.btn-hapus').forEach(btn => {
 });
 
 // === Inline Edit Nilai Modul ===
-document.querySelectorAll('.editable').forEach(cell => {
+document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
     cell.addEventListener('blur', function() {
         const mahasiswa_id = this.dataset.mahasiswa;
         const modul = this.dataset.modul;

@@ -11,8 +11,10 @@ class Mahasiswa extends Model
 
     protected $fillable = ['nim', 'nama'];
 
-    public function nilaiModul()
+    public function nilai_moduls()
     {
         return $this->hasMany(NilaiModul::class);
     }
+
+
 }
